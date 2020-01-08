@@ -46,6 +46,7 @@ def main():
                 color = 0
             else:
                 color = math.tan(i[0]/q[0])
+			#Division and Multiplication values below are scaling for visualization
             outfile.write(str((i[0])*1000.0) + ', ')
             outfile.write(str((q[0])*1000.0) + ', ' + str(float(t/100)) + ', ' +str(color) + '\n')
             x= x +1
