@@ -24,7 +24,9 @@ def main():
         print ("Exception is: ", e)
 
     #setup output file
-    outfile = open("out.csv", "w")
+    outfilename = infile.split(".")
+    pdb.set_trace()
+    outfile = open(outfilename, "w")
     outfile.write('i, q, t, c\n') # inphase, quadrature, time, and color (angle of i and q?)
 
     buf_size=1024*64 
@@ -45,9 +47,9 @@ def main():
             if (q[0] == 0):
                 color = 0
             else:
-                color = math.tan(i[0]/q[0])
-            outfile.write(str((i[0])*1000.0) + ', ')
-            outfile.write(str((q[0])*1000.0) + ', ' + str(float(t/100)) + ', ' +str(color) + '\n')
+                color = (i[0]/q[0])
+            outfile.write(str((i[0])*10000000.0) + ', ')
+            outfile.write(str((q[0])*10000000.0) + ', ' + str(float(t)) + ', ' +str(color) + '\n')
             x= x +1
             t = t + 1
         y= y +1 
