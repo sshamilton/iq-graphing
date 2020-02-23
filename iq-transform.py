@@ -47,9 +47,10 @@ def main():
             if (q[0] == 0):
                 color = 0
             else:
-                color = (i[0]/q[0])
-            outfile.write(str((i[0])*10000000.0) + ', ')
-            outfile.write(str((q[0])*10000000.0) + ', ' + str(float(t)) + ', ' +str(color) + '\n')
+                color = math.tan(i[0]/q[0])
+			#Division and Multiplication values below are scaling for visualization
+            outfile.write(str((i[0])*1000.0) + ', ')
+            outfile.write(str((q[0])*1000.0) + ', ' + str(float(t/100)) + ', ' +str(color) + '\n')
             x= x +1
             t = t + 1
         y= y +1 
