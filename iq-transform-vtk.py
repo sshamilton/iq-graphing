@@ -30,7 +30,7 @@ def get_files():
     #outfile.write('i, q, t, c\n') # inphase, quadrature, time, and color (angle of i and q?)
     return iqdata, outfile
 
-def get_polydata(iqdata, outfile):
+def get_polydata(iqdata):
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
     point_count = int(rawiq.size/2)
     iqtwo = rawiq.reshape(point_count, 2)
@@ -73,11 +73,7 @@ def get_polydata(iqdata, outfile):
     vg.Update()
     poly = vg.GetOutput()
     #poly.SetLines(lines)
-    w = vtk.vtkXMLPolyDataWriter()
-    w.SetInputData(poly)
-    w.SetFileName("autotest.vtp")
-    w.Write()
-    #pdb.set_trace()
+
 
 def viewdata():
     mapper = vtk.vtkPolyDataMapper()
@@ -144,7 +140,13 @@ def viewdata():
 
 def main():
     iqdata, outfile = get_files()
-    build_vtkfile(iqdata, outfile)
+    polydata = get_polydata(iqdata)
+    
+    w = vtk.vtkXMLPolyDataWriter()
+    w.SetInputData(poly)
+    w.SetFileName("autotest.vtp")
+    w.Write()
+    #pdb.set_trace()
     outfile.close()    
     iqdata.close()
 
