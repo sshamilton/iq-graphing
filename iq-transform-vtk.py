@@ -25,10 +25,10 @@ def get_files():
         print("Unable to open ", infile)
         print ("Exception is: ", e)
     #setup output file
-    outfilename = infile.split(".")
-    outfile = open(outfilename[0], "w")
+    #outfilename = infile.split(".")
+    #outfile = open(outfilename[0], "w")
     #outfile.write('i, q, t, c\n') # inphase, quadrature, time, and color (angle of i and q?)
-    return iqdata, outfile
+    return iqdata 
 
 def get_polydata(iqdata):
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
@@ -123,7 +123,7 @@ def viewdata(polydata):
     iren.Start()
 
 def main():
-    iqdata, outfile = get_files()
+    iqdata = get_files()
     polydata = get_polydata(iqdata)
     
     w = vtk.vtkXMLPolyDataWriter()
@@ -131,9 +131,8 @@ def main():
     w.SetFileName("autotest.vtp")
     w.Write()
     #Now bring up the 3d Viewer
-    viewdata(polydata)
+    #viewdata(polydata)
     #pdb.set_trace()
-    outfile.close()    
     iqdata.close()
 
 if __name__ == '__main__':
