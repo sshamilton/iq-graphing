@@ -73,32 +73,25 @@ def get_polydata(iqdata):
     vg.Update()
     poly = vg.GetOutput()
     #poly.SetLines(lines)
+    return poly
 
 
-def viewdata():
+def viewdata(polydata):
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputData(normals.GetOutput())
-    mapper.ScalarVisibilityOn()
-    mapper.SetScalarRange(-1,1)
-    mapper.SetScalarModeToUsePointFieldData()
-    mapper.ColorByArrayComponent("Velocity", 0)
-    #print image
-    #print contour
-
-    #mapper.SelectColorArray("Q-criterion")
-    #mapper.SetLookupTable(lut)
-
-    print mapper
+    mapper.SetInputData(polydata)
+    pdb.set_trace()
+    #mapper.ScalarVisibilityOn()
+    #mapper.SetScalarRange(-100,100)
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
     
     ren = vtk.vtkRenderer()
     ren.AddActor(actor)
-    ren.SetBackground(1,1,1)
+    ren.SetBackground(0,0,0)
     ren.ResetCamera()
 
     renWin = vtk.vtkRenderWindow()
-    renWin.SetSize(600,600)
+    renWin.SetSize(1024,1024)
     renWin.AddRenderer(ren)
     iren = vtk.vtkRenderWindowInteractor()
     def MouseMove(self, data):
@@ -107,29 +100,20 @@ def viewdata():
         #print iren
         #addcube
         #print ren
-        print ren.GetViewPoint()
-        print ren.GetDisplayPoint()
-        print ren.WorldToView()
-        print ren.ComputeVisiblePropBounds()
+        #print ren.GetViewPoint()
+        #print ren.GetDisplayPoint()
+        #print ren.WorldToView()
+        #print ren.ComputeVisiblePropBounds()
         ysize = renWin.GetSize()[1]
         c.SetValue(0,ysize)
         c.Update()
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(c.GetOutput())
-        normals.SetFeatureAngle(25) #?
-        normals.Update()
-
-        normals.SetFeatureAngle(45) #?
-        normals.Update()
-        mapper2 = vtk.vtkPolyDataMapper()
-        mapper2.SetInputData(normals.GetOutput())
-        mapper2.ScalarVisibilityOn()
-        mapper2.SetScalarRange(-.5,1)
-        mapper2.SetScalarModeToUsePointFieldData()
-        mapper2.ColorByArrayComponent("Velocity", 0)
-        actor2 = vtk.vtkActor()
-        actor2.SetMapper(mapper2)
-        ren.AddActor(actor2)
+        #mapper2 = vtk.vtkPolyDataMapper()
+        #mapper2.SetInputData(polydata)
+        #mapper2.ScalarVisibilityOn()
+        #mapper2.SetScalarRange(-100,100)
+        #actor2 = vtk.vtkActor()
+        #actor2.SetMapper(mapper2)
+        #ren.AddActor(actor2)
 
  
     iren.AddObserver("MiddleButtonPressEvent", MouseMove)
@@ -143,9 +127,11 @@ def main():
     polydata = get_polydata(iqdata)
     
     w = vtk.vtkXMLPolyDataWriter()
-    w.SetInputData(poly)
+    w.SetInputData(polydata)
     w.SetFileName("autotest.vtp")
     w.Write()
+    #Now bring up the 3d Viewer
+    viewdata(polydata)
     #pdb.set_trace()
     outfile.close()    
     iqdata.close()
