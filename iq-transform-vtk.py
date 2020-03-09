@@ -24,44 +24,36 @@ def get_files():
     except Exception as e:
         print("Unable to open ", infile)
         print ("Exception is: ", e)
-    #setup output file
-    #outfilename = infile.split(".")
-    #outfile = open(outfilename[0], "w")
-    #outfile.write('i, q, t, c\n') # inphase, quadrature, time, and color (angle of i and q?)
     return iqdata 
 
 def get_polydata(iqdata):
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
     point_count = int(rawiq.size/2)
     iqtwo = rawiq.reshape(point_count, 2)
-    iqtwo = iqtwo*100000 #scale the IQ data
+    scale = 100000
+    iqtwo = iqtwo*scale #scale the IQ data
     #z = np.arange(point_count)
-    z = np.arange(0,100000,100000/point_count)  
+
+    z = np.arange(0,scale,scale/point_count)  
     iqthree = np.column_stack((iqtwo,z))
     #print(str(rawiq[0]), str(rawiq[1])) #sanity check
 
     #plot just I data in 2d and extend the array
     qaxis = np.zeros(point_count)
-    i2data = np.column_stack((qaxis,iqtwo[:,0] ))
+    qaxis.fill((-1*scale)/10)
+    i2data = np.column_stack((iqtwo[:,0],qaxis ))
     idata = np.column_stack((i2data, z))
     iq_with_iaxis = np.append(iqthree,idata)
 
-    vtkdata = numpy_support.numpy_to_vtk(iq_with_iaxis, deep=False, array_type=vtk.VTK_FLOAT)
+    #plot just Q data in 2d and extend the array
+    q2data = np.column_stack((qaxis,iqtwo[:,1] ))
+    qdata = np.column_stack((q2data,z))
+    iq_with_iqaxis = np.append(iq_with_iaxis,qdata)
+
+    vtkdata = numpy_support.numpy_to_vtk(iq_with_iqaxis, deep=False, array_type=vtk.VTK_FLOAT)
     vtkdata.SetNumberOfComponents(3)
     vtkdata.SetName("Points")
 
-
-    #idatavtk = numpy_support.numpy_to_vtk(idata, deep=False, array_type=vtk.VTK_FLOAT)
-    #idatavtk.SetNumberOfComponents(3)
-    #idatavtk.SetName("Idata")
-    #table = vtk.vtkTable
-    #table.addColumn(vtkdata)
-    #lines = vtk.vtkCellArray()
-    #for p in range(point_count-1):
-    #    line = vtk.vtkLine()
-    #    line.GetPointIds().SetId(0,p)
-    #    line.GetPointIds().SetId(0,p+1)
-    #    lines.InsertNextCell(line)
     points = vtk.vtkPoints()
     points.SetData(vtkdata)
     pd = vtk.vtkPolyData()
