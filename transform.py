@@ -33,6 +33,9 @@ def get_data(infile):
         print ("Exception is: ", e)
     return iqdata 
 
+def decimate(data):
+    return [ i for i,j in zip(data,range(len(data))) if not j%10 ] 
+
 def get_polydata(iqdata):
     # read data as numpy array, from file, datatype=float, count=allitems
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
@@ -42,7 +45,7 @@ def get_polydata(iqdata):
     iqtwo = rawiq.reshape(point_count, 2)
 
 
-    scale = 10000000
+    scale = 10000
     iqtwo = iqtwo*scale #scale the IQ data
 
     #z = np.arange(point_count)
@@ -51,6 +54,7 @@ def get_polydata(iqdata):
     z = np.arange(0,len(iqtwo))
     #iqthree = np.column_stack((iqtwo,z))
     iqthree = np.column_stack((iqtwo,z))
+    #iqthree = decimate(iqthree)
     print("Raw iq 0: "+str(rawiq[0])+" Raw iq 1: "+ str(rawiq[1])) #sanity check
     print("Raw iq end: "+str(rawiq[-1])+" Raw iq end: "+ str(rawiq[-1])) #sanity check
     print("iqthree 0: "+str(iqthree[0])+" iqthree 1: "+ str(iqthree[1])) #sanity check
