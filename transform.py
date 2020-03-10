@@ -12,6 +12,8 @@ import numpy as np
 from vtk.util import numpy_support
 import argparse
 
+
+# Argument parsing
 def get_args():
     parser = argparse.ArgumentParser(description="convert raw data to vtk or csv")
     parser.add_argument('-i', '--inputfile', dest='input_file',
@@ -21,7 +23,6 @@ def get_args():
             type=str, nargs='?', required=True,
             help='output filename')
     return parser.parse_args()
-
 
 def get_data(infile):
     print("Processing file ", infile)
@@ -33,16 +34,28 @@ def get_data(infile):
     return iqdata 
 
 def get_polydata(iqdata):
+    # read data as numpy array, from file, datatype=float, count=allitems
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
+
+    # create 2d array of iq points
     point_count = int(rawiq.size/2)
     iqtwo = rawiq.reshape(point_count, 2)
-    scale = 100000
+
+
+    scale = 10000000
     iqtwo = iqtwo*scale #scale the IQ data
+
     #z = np.arange(point_count)
     zscale = scale*10
-    z = np.arange(0,zscale,zscale/(point_count))  
+    #z = np.arange(0,zscale,zscale/(point_count))  
+    z = np.arange(0,len(iqtwo))
+    #iqthree = np.column_stack((iqtwo,z))
     iqthree = np.column_stack((iqtwo,z))
-    #print(str(rawiq[0]), str(rawiq[1])) #sanity check
+    print("Raw iq 0: "+str(rawiq[0])+" Raw iq 1: "+ str(rawiq[1])) #sanity check
+    print("Raw iq end: "+str(rawiq[-1])+" Raw iq end: "+ str(rawiq[-1])) #sanity check
+    print("iqthree 0: "+str(iqthree[0])+" iqthree 1: "+ str(iqthree[1])) #sanity check
+    print("iqthree end: "+str(iqthree[-1])+" iqthree end: "+ str(iqthree[-1])) #sanity check
+    print("Number of samples: "+str(len(iqthree)))
 
     #plot just I data in 2d and extend the array
     qaxis = np.zeros(point_count)
@@ -83,7 +96,7 @@ def get_polydata(iqdata):
 
     return poly
 
-
+# draw image with python
 def viewdata(polydata):
     mapper = vtk.vtkPolyDataMapper()
     mapper.SetInputData(polydata)
@@ -130,9 +143,13 @@ def viewdata(polydata):
     iren.Start()
 
 def main():
+    # get cmd line args
     args = get_args()
 
+    # process raw data for iq values
     iqdata = get_data(args.input_file)
+
+    # 
     polydata = get_polydata(iqdata)
     
     w = vtk.vtkXMLPolyDataWriter()

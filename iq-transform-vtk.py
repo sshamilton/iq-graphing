@@ -49,7 +49,7 @@ def get_polydata(iqdata):
     qdata = np.column_stack((q2data,z))
     iq_with_iqaxis = np.append(iq_with_iaxis,qdata)
 
-    vtkdata = numpy_support.numpy_to_vtk(iq_with_iqaxis, deep=False, array_type=vtk.VTK_FLOAT)
+    vtkdata = numpy_support.numpy_to_vtk(iqthree, deep=False, array_type=vtk.VTK_FLOAT)
     vtkdata.SetNumberOfComponents(3)
     vtkdata.SetName("Points")
 
@@ -130,7 +130,7 @@ def main():
     
     w = vtk.vtkXMLPolyDataWriter()
     w.SetInputData(polydata)
-    w.SetFileName("autotest-2.vtp")
+    w.SetFileName("data/processed/qpsk31-3.vtp")
     w.Write()
     #Now bring up the 3d Viewer
     #viewdata(polydata)
