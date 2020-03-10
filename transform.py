@@ -38,6 +38,8 @@ def decimate(data):
 
 def get_polydata(iqdata):
     # read data as numpy array, from file, datatype=float, count=allitems
+    # TODO: grqx uses gnuradio lib to pack data as complex64 IEEE 754 format
+    # this should be able to be parsed with the np.complex64
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
 
     # create 2d array of iq points
