@@ -33,8 +33,8 @@ def get_polydata(iqdata):
     scale = 100000
     iqtwo = iqtwo*scale #scale the IQ data
     #z = np.arange(point_count)
-
-    z = np.arange(0,scale,scale/point_count)  
+    zscale = scale*10
+    z = np.arange(0,zscale,zscale/(point_count))  
     iqthree = np.column_stack((iqtwo,z))
     #print(str(rawiq[0]), str(rawiq[1])) #sanity check
 
@@ -56,15 +56,26 @@ def get_polydata(iqdata):
 
     points = vtk.vtkPoints()
     points.SetData(vtkdata)
+
+
     pd = vtk.vtkPolyData()
     pd.SetPoints(points)
     pd.GetPointData().AddArray(vtkdata)
-    #pd.GetPointData().AddArray(idatavtk)
+    #attempt to draw lines between points
+    lines = vtk.vtkCellArray()
+    for i in range(0,point_count-1):
+        line = vtk.vtkLine()
+        line.GetPointIds().SetId(0,i+1)
+        line.GetPointIds().SetId(1,i+2)
+        lines.InsertNextCell(line)
+    pdb.set_trace()
+
+    pd.SetLines(lines)
     vg = vtk.vtkVertexGlyphFilter()
     vg.SetInputData(pd)
     vg.Update()
     poly = vg.GetOutput()
-    #poly.SetLines(lines)
+
     return poly
 
 
