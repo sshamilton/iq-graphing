@@ -2,7 +2,6 @@
 # Written by Stephen Hamilton 
 # 2 Jan 2020
 
-
 import sys
 import struct
 import math
@@ -63,12 +62,12 @@ def get_polydata(iqdata):
     pd.GetPointData().AddArray(vtkdata)
     #attempt to draw lines between points
     lines = vtk.vtkCellArray()
-    for i in range(0,point_count-1):
-        line = vtk.vtkLine()
-        line.GetPointIds().SetId(0,i+1)
-        line.GetPointIds().SetId(1,i+2)
-        lines.InsertNextCell(line)
-    pdb.set_trace()
+    #for i in range(0,point_count-1):
+    #    line = vtk.vtkLine()
+    #    line.GetPointIds().SetId(0,i+1)
+    #    line.GetPointIds().SetId(1,i+2)
+    #    lines.InsertNextCell(line)
+    #pdb.set_trace()
 
     pd.SetLines(lines)
     vg = vtk.vtkVertexGlyphFilter()
@@ -131,7 +130,7 @@ def main():
     
     w = vtk.vtkXMLPolyDataWriter()
     w.SetInputData(polydata)
-    w.SetFileName("autotest.vtp")
+    w.SetFileName("autotest-2.vtp")
     w.Write()
     #Now bring up the 3d Viewer
     #viewdata(polydata)
