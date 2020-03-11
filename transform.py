@@ -22,6 +22,9 @@ def get_args():
     parser.add_argument('-o', '--outputfile', dest='output_file',
             type=str, nargs='?', required=True,
             help='output filename')
+    parser.add_argument('-s', '--samplerate', dest='sample_rate',
+            type=float, nargs='?', required=True,
+            help='sample rate in Msps, ex. 1.8 = 1.8Msps')
     return parser.parse_args()
 
 def get_data(infile):
@@ -33,49 +36,56 @@ def get_data(infile):
         print ("Exception is: ", e)
     return iqdata 
 
-def decimate(data):
-    return [ i for i,j in zip(data,range(len(data))) if not j%10 ] 
+def decimate(data, rate):
+    return [ i for i,j in zip(data,range(len(data))) if not j%rate ] 
 
-def get_polydata(iqdata):
+def print_sanity_check(data, name):
+    print("*** sanity check for {}: \n\ttype: {}\n\tlen()={}\n\t[0]={}\n\t[-1]={}".format(
+        name, str(type(data)), len(data), data[0], data[-1])) # sanity check
+
+def print_arr_stats(arr, name):
+    print("*** Stats for {}:\n\tmax={}\n\tmin={}\n\tmean={}\n\telements={}".format(
+        name, arr.max(), arr.min(), arr.mean(), arr.size))
+
+def get_polydata(iqdata, sample_rate):
     # read data as numpy array, from file, datatype=float, count=allitems
     # TODO: grqx uses gnuradio lib to pack data as complex64 IEEE 754 format
     # this should be able to be parsed with the np.complex64
-    rawiq = np.fromfile(iqdata, dtype='f', count = -1)
+    iq = np.fromfile(iqdata, dtype='complex64', count = -1)
+    print_sanity_check(iq, "iq")
 
-    # create 2d array of iq points
-    point_count = int(rawiq.size/2)
-    iqtwo = rawiq.reshape(point_count, 2)
+    print_arr_stats(iq.real, "iq.real")
+    print_arr_stats(iq.imag, "iq.imag")
+
+    # Generate time (z-axis)
+    num_samples = iq.size
+    # sample_rate is in Msps so multiply by 1000000
+    z = [ i/(sample_rate*1000000) for i in range(0,num_samples) ]
+    print(z[0])
+    #print_sanity_check(z, "z")
+    #print_arr_stats(z, "z")
 
 
-    scale = 10000
-    iqtwo = iqtwo*scale #scale the IQ data
+    # grab real/imag components for vtk
+    iqz = np.column_stack((
+            np.array(iq.real, dtype=float), 
+            np.array(iq.imag, dtype=float),
+            np.array(z, dtype=float)))
+    print_sanity_check(iqz, "iqz")
+    
+    # scale real/imag components up
+    print("*** iqz[:,0] = {}".format(iqz[:,0]))
+    maxmag = max(abs(iqz[:,0].max()), abs(iqz[:,0].min()), abs(iqz[:,1].max()), abs(iqz[:,1].min()))
+    print("*** maxmag is {}".format(maxmag))
+    scalefactor = maxmag
+    print("*** scale value = {}".format(scalefactor))
 
-    #z = np.arange(point_count)
-    zscale = scale*10
-    #z = np.arange(0,zscale,zscale/(point_count))  
-    z = np.arange(0,len(iqtwo))
-    #iqthree = np.column_stack((iqtwo,z))
-    iqthree = np.column_stack((iqtwo,z))
-    #iqthree = decimate(iqthree)
-    print("Raw iq 0: "+str(rawiq[0])+" Raw iq 1: "+ str(rawiq[1])) #sanity check
-    print("Raw iq end: "+str(rawiq[-1])+" Raw iq end: "+ str(rawiq[-1])) #sanity check
-    print("iqthree 0: "+str(iqthree[0])+" iqthree 1: "+ str(iqthree[1])) #sanity check
-    print("iqthree end: "+str(iqthree[-1])+" iqthree end: "+ str(iqthree[-1])) #sanity check
-    print("Number of samples: "+str(len(iqthree)))
+    iqz[:,0] *= scalefactor
+    iqz[:,1] *= scalefactor 
 
-    #plot just I data in 2d and extend the array
-    qaxis = np.zeros(point_count)
-    qaxis.fill((-1*scale)/10)
-    i2data = np.column_stack((iqtwo[:,0],qaxis ))
-    idata = np.column_stack((i2data, z))
-    iq_with_iaxis = np.append(iqthree,idata)
+    print_sanity_check(iqz, "iqz post scaling")
 
-    #plot just Q data in 2d and extend the array
-    q2data = np.column_stack((qaxis,iqtwo[:,1] ))
-    qdata = np.column_stack((q2data,z))
-    iq_with_iqaxis = np.append(iq_with_iaxis,qdata)
-
-    vtkdata = numpy_support.numpy_to_vtk(iqthree, deep=False, array_type=vtk.VTK_FLOAT)
+    vtkdata = numpy_support.numpy_to_vtk(iqz, deep=False, array_type=vtk.VTK_FLOAT)
     vtkdata.SetNumberOfComponents(3)
     vtkdata.SetName("Points")
 
@@ -86,15 +96,7 @@ def get_polydata(iqdata):
     pd = vtk.vtkPolyData()
     pd.SetPoints(points)
     pd.GetPointData().AddArray(vtkdata)
-    #attempt to draw lines between points
-    lines = vtk.vtkCellArray()
-    #for i in range(0,point_count-1):
-    #    line = vtk.vtkLine()
-    #    line.GetPointIds().SetId(0,i+1)
-    #    line.GetPointIds().SetId(1,i+2)
-    #    lines.InsertNextCell(line)
 
-    pd.SetLines(lines)
     vg = vtk.vtkVertexGlyphFilter()
     vg.SetInputData(pd)
     vg.Update()
@@ -156,7 +158,7 @@ def main():
     iqdata = get_data(args.input_file)
 
     # 
-    polydata = get_polydata(iqdata)
+    polydata = get_polydata(iqdata, args.sample_rate)
     
     w = vtk.vtkXMLPolyDataWriter()
     w.SetInputData(polydata)
