@@ -33,14 +33,16 @@ def get_data(infile):
         print ("Exception is: ", e)
     return iqdata 
 
-def decimate(data):
-    return [ i for i,j in zip(data,range(len(data))) if not j%10 ] 
+def decimate(data, rate):
+    return [ i for i,j in zip(data,range(len(data))) if not j%rate ] 
 
 def get_polydata(iqdata):
     # read data as numpy array, from file, datatype=float, count=allitems
     # TODO: grqx uses gnuradio lib to pack data as complex64 IEEE 754 format
     # this should be able to be parsed with the np.complex64
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
+    print("Raw iq 0: "+str(rawiq[0])+" Raw iq 1: "+ str(rawiq[1])) #sanity check
+    print("Raw iq end: "+str(rawiq[-1])+" Raw iq end: "+ str(rawiq[-1])) #sanity check
 
     # create 2d array of iq points
     point_count = int(rawiq.size/2)
@@ -54,11 +56,10 @@ def get_polydata(iqdata):
     zscale = scale*10
     #z = np.arange(0,zscale,zscale/(point_count))  
     z = np.arange(0,len(iqtwo))
-    #iqthree = np.column_stack((iqtwo,z))
     iqthree = np.column_stack((iqtwo,z))
-    #iqthree = decimate(iqthree)
-    print("Raw iq 0: "+str(rawiq[0])+" Raw iq 1: "+ str(rawiq[1])) #sanity check
-    print("Raw iq end: "+str(rawiq[-1])+" Raw iq end: "+ str(rawiq[-1])) #sanity check
+    iqthree = np.column_stack((iqtwo,z))
+    decimation_rate = 10
+    iqthree = decimate(iqthree, decimation_rate)
     print("iqthree 0: "+str(iqthree[0])+" iqthree 1: "+ str(iqthree[1])) #sanity check
     print("iqthree end: "+str(iqthree[-1])+" iqthree end: "+ str(iqthree[-1])) #sanity check
     print("Number of samples: "+str(len(iqthree)))
@@ -102,6 +103,75 @@ def get_polydata(iqdata):
 
     return poly
 
+def get_complex_polydata(iqdata):
+    # read data as numpy array, from file, datatype=float, count=allitems
+    # TODO: grqx uses gnuradio lib to pack data as complex64 IEEE 754 format
+    # this should be able to be parsed with the np.complex64
+    rawiq = np.fromfile(iqdata, dtype='f', count = -1)
+    print("Raw iq 0: "+str(rawiq[0])+" Raw iq 1: "+ str(rawiq[1])) #sanity check
+    print("Raw iq end: "+str(rawiq[-1])+" Raw iq end: "+ str(rawiq[-1])) #sanity check
+    complexiq = np.fromfile(iqdata, dtype='complex', count = -1)
+    print("complex iq 0: "+str(complexiq[0])+" complex iq 1: "+ str(complexiq[1])) #sanity check
+    print("complex iq end: "+str(complexiq[-1])+" complex iq end: "+ str(complexiq[-1])) #sanity check
+
+    # create 2d array of iq points
+    point_count = int(rawiq.size/2)
+    iqtwo = rawiq.reshape(point_count, 2)
+    #iqtwo = complexiq.reshape(point_count, 2)
+
+
+    scale = 10000
+    iqtwo = iqtwo*scale #scale the IQ data
+
+    #z = np.arange(point_count)
+    zscale = scale*10
+    #z = np.arange(0,zscale,zscale/(point_count))  
+    z = np.arange(0,len(iqtwo))
+    #iqthree = np.column_stack((iqtwo,z))
+    iqthree = np.column_stack((iqtwo,z))
+    #iqthree = decimate(iqthree)
+    print("iqthree 0: "+str(iqthree[0])+" iqthree 1: "+ str(iqthree[1])) #sanity check
+    print("iqthree end: "+str(iqthree[-1])+" iqthree end: "+ str(iqthree[-1])) #sanity check
+    print("Number of samples: "+str(len(iqthree)))
+
+    #plot just I data in 2d and extend the array
+    qaxis = np.zeros(point_count)
+    qaxis.fill((-1*scale)/10)
+    i2data = np.column_stack((iqtwo[:,0],qaxis ))
+    idata = np.column_stack((i2data, z))
+    iq_with_iaxis = np.append(iqthree,idata)
+
+    #plot just Q data in 2d and extend the array
+    q2data = np.column_stack((qaxis,iqtwo[:,1] ))
+    qdata = np.column_stack((q2data,z))
+    iq_with_iqaxis = np.append(iq_with_iaxis,qdata)
+
+    vtkdata = numpy_support.numpy_to_vtk(iqthree, deep=False, array_type=vtk.VTK_FLOAT)
+    vtkdata.SetNumberOfComponents(3)
+    vtkdata.SetName("Points")
+
+    points = vtk.vtkPoints()
+    points.SetData(vtkdata)
+
+
+    pd = vtk.vtkPolyData()
+    pd.SetPoints(points)
+    pd.GetPointData().AddArray(vtkdata)
+    #attempt to draw lines between points
+    lines = vtk.vtkCellArray()
+    #for i in range(0,point_count-1):
+    #    line = vtk.vtkLine()
+    #    line.GetPointIds().SetId(0,i+1)
+    #    line.GetPointIds().SetId(1,i+2)
+    #    lines.InsertNextCell(line)
+
+    pd.SetLines(lines)
+    vg = vtk.vtkVertexGlyphFilter()
+    vg.SetInputData(pd)
+    vg.Update()
+    poly = vg.GetOutput()
+
+    return poly
 # draw image with python
 def viewdata(polydata):
     mapper = vtk.vtkPolyDataMapper()
