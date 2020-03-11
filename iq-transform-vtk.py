@@ -130,7 +130,7 @@ def main():
     
     w = vtk.vtkXMLPolyDataWriter()
     w.SetInputData(polydata)
-    w.SetFileName("data/processed/qpsk31-3.vtp")
+    w.SetFileName("data/processed/fm-low-2x-2.vtp")
     w.Write()
     #Now bring up the 3d Viewer
     #viewdata(polydata)
