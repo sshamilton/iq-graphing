@@ -77,7 +77,7 @@ def get_polydata(iqdata, sample_rate):
     print("*** iqz[:,0] = {}".format(iqz[:,0]))
     maxmag = max(abs(iqz[:,0].max()), abs(iqz[:,0].min()), abs(iqz[:,1].max()), abs(iqz[:,1].min()))
     print("*** maxmag is {}".format(maxmag))
-    scalefactor = maxmag
+    scalefactor = maxmag*100
     print("*** scale value = {}".format(scalefactor))
 
     iqz[:,0] *= scalefactor
