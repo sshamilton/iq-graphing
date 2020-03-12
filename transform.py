@@ -28,6 +28,13 @@ def get_args():
     parser.add_argument('-z', '--zscale', dest='zscale',
             type=float, default=10.0, nargs='?', required=False,
             help='scale factor for z-axis (time)')
+    parser.add_argument('--project_i', dest='project_i', action='store_true',
+            help='project the I (real) portion of the signal')
+    parser.set_defaults(project_i=False)
+    parser.add_argument('--project_q', dest='project_q', action='store_true',
+            help='project the Q (imaginary) portion of the signal')
+    parser.set_defaults(project_q=False)
+
     return parser.parse_args()
 
 def get_data(infile):
@@ -50,7 +57,20 @@ def print_arr_stats(arr, name):
     print("*** Stats for {}:\n\tmax={}\n\tmin={}\n\tmean={}\n\telements={}".format(
         name, arr.max(), arr.min(), arr.mean(), arr.size))
 
-def get_polydata(iqdata, sample_rate, zscale):
+# add a projection for i or q onto the numpy array
+# returns a new n-dim array with the projection data included
+def gen_projection(target, offset, arr, num_samples):
+    offset_arr = np.zeros(num_samples)
+    offset_arr.fill(offset)
+    if target == 'i':
+        projection = np.column_stack((arr[:,0], offset_arr, arr[:,2]))
+        return projection
+    if target == 'q':
+        projection = np.column_stack((offset_arr, arr[:,1], arr[:,2]))
+        return projection
+
+
+def get_polydata(iqdata, sample_rate, zscale, project_i, project_q):
     # read data as numpy array, from file, datatype=float, count=allitems
     # TODO: grqx uses gnuradio lib to pack data as complex64 IEEE 754 format
     # this should be able to be parsed with the np.complex64
@@ -87,9 +107,17 @@ def get_polydata(iqdata, sample_rate, zscale):
     iqz[:,0] *= scalefactor
     iqz[:,1] *= scalefactor 
 
-    print_sanity_check(iqz, "iqz post scaling")
+    #print_sanity_check(iqz, "iqz post scaling")
 
-    vtkdata = numpy_support.numpy_to_vtk(iqz, deep=False, array_type=vtk.VTK_FLOAT)
+    # build projections
+    iqz_final = iqz
+    if project_i:
+        iqz_final = np.append(iqz_final, gen_projection('i', 2*maxmag*scalefactor, iqz, num_samples))
+    if project_q:
+        iqz_final = np.append(iqz_final, gen_projection('q', 2*maxmag*scalefactor, iqz, num_samples))
+   
+    # Produce vtk data
+    vtkdata = numpy_support.numpy_to_vtk(iqz_final, deep=False, array_type=vtk.VTK_FLOAT)
     vtkdata.SetNumberOfComponents(3)
     vtkdata.SetName("Points")
 
@@ -171,7 +199,12 @@ def main():
     # process raw data for iq values
     iqdata = get_data(args.input_file)
 
-    polydata = get_polydata(iqdata, args.sample_rate, args.zscale)
+    polydata = get_polydata(
+            iqdata, 
+            args.sample_rate, 
+            args.zscale, 
+            args.project_i,
+            args.project_q)
     
     w = vtk.vtkXMLPolyDataWriter()
     w.SetInputData(polydata)
