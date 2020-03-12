@@ -1,4 +1,13 @@
+# vim temp files
+*.swp
+
+# Python
 *.pyc
+
+# Raw processed data
+data/
 *.raw
+
+# csv
 *.csv
 

@@ -2,7 +2,7 @@
 
 These are two scripts to assist with IQ data transformation for 
 visualization in VTK.  One converts it to CSV for import, while the other
-creates a native VTK file for viewing directly.# Notes for installation on Fedora 31
+creates a native VTK file for viewing directly.
 
 
 ## Installation: Fedora 31
@@ -28,3 +28,4 @@ $ tar xvzf ParaView-5.8.0-MPI-Linux-Python3.7-64bit.tar.gz
 $ sudo mv ParaView-5.8.0-MPI-Linux-Python3.7-64bit.tar.gz /opt
 ```
 
+Data files placed in the `data/` directory will be ignored by git to keep the repository reasonable in size.

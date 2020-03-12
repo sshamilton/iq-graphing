@@ -2,7 +2,6 @@
 # Written by Stephen Hamilton 
 # 2 Jan 2020
 
-
 import sys
 import struct
 import math
@@ -24,85 +23,77 @@ def get_files():
     except Exception as e:
         print("Unable to open ", infile)
         print ("Exception is: ", e)
-    #setup output file
-    outfilename = infile.split(".")
-    outfile = open(outfilename[0], "w")
-    #outfile.write('i, q, t, c\n') # inphase, quadrature, time, and color (angle of i and q?)
-    return iqdata, outfile
+    return iqdata 
 
-def get_polydata(iqdata, outfile):
+def get_polydata(iqdata):
     rawiq = np.fromfile(iqdata, dtype='f', count = -1)
     point_count = int(rawiq.size/2)
     iqtwo = rawiq.reshape(point_count, 2)
-    iqtwo = iqtwo*100000 #scale the IQ data
+    scale = 100000
+    iqtwo = iqtwo*scale #scale the IQ data
     #z = np.arange(point_count)
-    z = np.arange(0,100000,100000/point_count)  
+    zscale = scale*10
+    z = np.arange(0,zscale,zscale/(point_count))  
     iqthree = np.column_stack((iqtwo,z))
     #print(str(rawiq[0]), str(rawiq[1])) #sanity check
 
     #plot just I data in 2d and extend the array
     qaxis = np.zeros(point_count)
-    i2data = np.column_stack((qaxis,iqtwo[:,0] ))
+    qaxis.fill((-1*scale)/10)
+    i2data = np.column_stack((iqtwo[:,0],qaxis ))
     idata = np.column_stack((i2data, z))
     iq_with_iaxis = np.append(iqthree,idata)
 
-    vtkdata = numpy_support.numpy_to_vtk(iq_with_iaxis, deep=False, array_type=vtk.VTK_FLOAT)
+    #plot just Q data in 2d and extend the array
+    q2data = np.column_stack((qaxis,iqtwo[:,1] ))
+    qdata = np.column_stack((q2data,z))
+    iq_with_iqaxis = np.append(iq_with_iaxis,qdata)
+
+    vtkdata = numpy_support.numpy_to_vtk(iqthree, deep=False, array_type=vtk.VTK_FLOAT)
     vtkdata.SetNumberOfComponents(3)
     vtkdata.SetName("Points")
 
-
-    #idatavtk = numpy_support.numpy_to_vtk(idata, deep=False, array_type=vtk.VTK_FLOAT)
-    #idatavtk.SetNumberOfComponents(3)
-    #idatavtk.SetName("Idata")
-    #table = vtk.vtkTable
-    #table.addColumn(vtkdata)
-    #lines = vtk.vtkCellArray()
-    #for p in range(point_count-1):
-    #    line = vtk.vtkLine()
-    #    line.GetPointIds().SetId(0,p)
-    #    line.GetPointIds().SetId(0,p+1)
-    #    lines.InsertNextCell(line)
     points = vtk.vtkPoints()
     points.SetData(vtkdata)
+
+
     pd = vtk.vtkPolyData()
     pd.SetPoints(points)
     pd.GetPointData().AddArray(vtkdata)
-    #pd.GetPointData().AddArray(idatavtk)
+    #attempt to draw lines between points
+    lines = vtk.vtkCellArray()
+    #for i in range(0,point_count-1):
+    #    line = vtk.vtkLine()
+    #    line.GetPointIds().SetId(0,i+1)
+    #    line.GetPointIds().SetId(1,i+2)
+    #    lines.InsertNextCell(line)
+    #pdb.set_trace()
+
+    pd.SetLines(lines)
     vg = vtk.vtkVertexGlyphFilter()
     vg.SetInputData(pd)
     vg.Update()
     poly = vg.GetOutput()
-    #poly.SetLines(lines)
-    w = vtk.vtkXMLPolyDataWriter()
-    w.SetInputData(poly)
-    w.SetFileName("autotest.vtp")
-    w.Write()
-    #pdb.set_trace()
 
-def viewdata():
+    return poly
+
+
+def viewdata(polydata):
     mapper = vtk.vtkPolyDataMapper()
-    mapper.SetInputData(normals.GetOutput())
-    mapper.ScalarVisibilityOn()
-    mapper.SetScalarRange(-1,1)
-    mapper.SetScalarModeToUsePointFieldData()
-    mapper.ColorByArrayComponent("Velocity", 0)
-    #print image
-    #print contour
-
-    #mapper.SelectColorArray("Q-criterion")
-    #mapper.SetLookupTable(lut)
-
-    print mapper
+    mapper.SetInputData(polydata)
+    pdb.set_trace()
+    #mapper.ScalarVisibilityOn()
+    #mapper.SetScalarRange(-100,100)
     actor = vtk.vtkActor()
     actor.SetMapper(mapper)
     
     ren = vtk.vtkRenderer()
     ren.AddActor(actor)
-    ren.SetBackground(1,1,1)
+    ren.SetBackground(0,0,0)
     ren.ResetCamera()
 
     renWin = vtk.vtkRenderWindow()
-    renWin.SetSize(600,600)
+    renWin.SetSize(1024,1024)
     renWin.AddRenderer(ren)
     iren = vtk.vtkRenderWindowInteractor()
     def MouseMove(self, data):
@@ -111,29 +102,20 @@ def viewdata():
         #print iren
         #addcube
         #print ren
-        print ren.GetViewPoint()
-        print ren.GetDisplayPoint()
-        print ren.WorldToView()
-        print ren.ComputeVisiblePropBounds()
+        #print ren.GetViewPoint()
+        #print ren.GetDisplayPoint()
+        #print ren.WorldToView()
+        #print ren.ComputeVisiblePropBounds()
         ysize = renWin.GetSize()[1]
         c.SetValue(0,ysize)
         c.Update()
-        normals = vtk.vtkPolyDataNormals()
-        normals.SetInputData(c.GetOutput())
-        normals.SetFeatureAngle(25) #?
-        normals.Update()
-
-        normals.SetFeatureAngle(45) #?
-        normals.Update()
-        mapper2 = vtk.vtkPolyDataMapper()
-        mapper2.SetInputData(normals.GetOutput())
-        mapper2.ScalarVisibilityOn()
-        mapper2.SetScalarRange(-.5,1)
-        mapper2.SetScalarModeToUsePointFieldData()
-        mapper2.ColorByArrayComponent("Velocity", 0)
-        actor2 = vtk.vtkActor()
-        actor2.SetMapper(mapper2)
-        ren.AddActor(actor2)
+        #mapper2 = vtk.vtkPolyDataMapper()
+        #mapper2.SetInputData(polydata)
+        #mapper2.ScalarVisibilityOn()
+        #mapper2.SetScalarRange(-100,100)
+        #actor2 = vtk.vtkActor()
+        #actor2.SetMapper(mapper2)
+        #ren.AddActor(actor2)
 
  
     iren.AddObserver("MiddleButtonPressEvent", MouseMove)
@@ -143,9 +125,16 @@ def viewdata():
     iren.Start()
 
 def main():
-    iqdata, outfile = get_files()
-    build_vtkfile(iqdata, outfile)
-    outfile.close()    
+    iqdata = get_files()
+    polydata = get_polydata(iqdata)
+    
+    w = vtk.vtkXMLPolyDataWriter()
+    w.SetInputData(polydata)
+    w.SetFileName("data/processed/fm-low-2x-2.vtp")
+    w.Write()
+    #Now bring up the 3d Viewer
+    #viewdata(polydata)
+    #pdb.set_trace()
     iqdata.close()
 
 if __name__ == '__main__':
