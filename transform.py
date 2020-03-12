@@ -25,6 +25,9 @@ def get_args():
     parser.add_argument('-s', '--samplerate', dest='sample_rate',
             type=float, nargs='?', required=True,
             help='sample rate in Msps, ex. 1.8 = 1.8Msps')
+    parser.add_argument('-z', '--zscale', dest='zscale',
+            type=float, default=10.0, nargs='?', required=False,
+            help='scale factor for z-axis (time)')
     return parser.parse_args()
 
 def get_data(infile):
@@ -47,7 +50,7 @@ def print_arr_stats(arr, name):
     print("*** Stats for {}:\n\tmax={}\n\tmin={}\n\tmean={}\n\telements={}".format(
         name, arr.max(), arr.min(), arr.mean(), arr.size))
 
-def get_polydata(iqdata, sample_rate):
+def get_polydata(iqdata, sample_rate, zscale):
     # read data as numpy array, from file, datatype=float, count=allitems
     # TODO: grqx uses gnuradio lib to pack data as complex64 IEEE 754 format
     # this should be able to be parsed with the np.complex64
@@ -70,14 +73,15 @@ def get_polydata(iqdata, sample_rate):
     iqz = np.column_stack((
             np.array(iq.real, dtype=float), 
             np.array(iq.imag, dtype=float),
-            np.array(z, dtype=float)))
+            np.array(z, dtype=float)*zscale))
     print_sanity_check(iqz, "iqz")
     
     # scale real/imag components up
     print("*** iqz[:,0] = {}".format(iqz[:,0]))
     maxmag = max(abs(iqz[:,0].max()), abs(iqz[:,0].min()), abs(iqz[:,1].max()), abs(iqz[:,1].min()))
     print("*** maxmag is {}".format(maxmag))
-    scalefactor = maxmag*100
+    
+    scalefactor = (1 / maxmag)
     print("*** scale value = {}".format(scalefactor))
 
     iqz[:,0] *= scalefactor
@@ -150,15 +154,24 @@ def viewdata(polydata):
     iren.Initialize()
     iren.Start()
 
+def print_process_info(args):
+    print("Transforming Data for use in VTK")
+    print("  - Input file: {}".format(args.input_file))
+    print("  - Output file: {}".format(args.output_file))
+    print("  - Sample Rate: {} Msps".format(args.sample_rate))
+    print("  - zscale: {}".format(args.zscale))
+
 def main():
     # get cmd line args
     args = get_args()
 
+    # print process information
+    print_process_info(args)
+
     # process raw data for iq values
     iqdata = get_data(args.input_file)
 
-    # 
-    polydata = get_polydata(iqdata, args.sample_rate)
+    polydata = get_polydata(iqdata, args.sample_rate, args.zscale)
     
     w = vtk.vtkXMLPolyDataWriter()
     w.SetInputData(polydata)
