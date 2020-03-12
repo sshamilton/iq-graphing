@@ -30,10 +30,13 @@ def get_args():
             help='scale factor for z-axis (time)')
     parser.add_argument('--project_i', dest='project_i', action='store_true',
             help='project the I (real) portion of the signal')
-    parser.set_defaults(project_i=False)
     parser.add_argument('--project_q', dest='project_q', action='store_true',
             help='project the Q (imaginary) portion of the signal')
+    parser.add_argument('--no_iq', dest='no_iq', action='store_true',
+            help='turn off the plotting of the main iq visualization, for use with plotting projections only')
     parser.set_defaults(project_q=False)
+    parser.set_defaults(project_i=False)
+    parser.set_defaults(no_iq=False)
 
     return parser.parse_args()
 
@@ -70,7 +73,7 @@ def gen_projection(target, offset, arr, num_samples):
         return projection
 
 
-def get_polydata(iqdata, sample_rate, zscale, project_i, project_q):
+def get_polydata(iqdata, sample_rate, zscale, project_i, project_q, no_iq):
     # read data as numpy array, from file, datatype=float, count=allitems
     # TODO: grqx uses gnuradio lib to pack data as complex64 IEEE 754 format
     # this should be able to be parsed with the np.complex64
@@ -110,7 +113,11 @@ def get_polydata(iqdata, sample_rate, zscale, project_i, project_q):
     #print_sanity_check(iqz, "iqz post scaling")
 
     # build projections
-    iqz_final = iqz
+    if no_iq:
+        iqz_final = np.zeros([1,3])
+    else:
+        iqz_final = iqz
+
     if project_i:
         iqz_final = np.append(iqz_final, gen_projection('i', 2*maxmag*scalefactor, iqz, num_samples))
     if project_q:
@@ -204,7 +211,8 @@ def main():
             args.sample_rate, 
             args.zscale, 
             args.project_i,
-            args.project_q)
+            args.project_q,
+            args.no_iq)
     
     w = vtk.vtkXMLPolyDataWriter()
     w.SetInputData(polydata)
